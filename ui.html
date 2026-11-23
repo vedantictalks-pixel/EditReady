@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EditReady</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light;
+  --paper: #E6E9E8;
+  --paper-2: #D9DDDC;
+  --line: #C3C9C8;
+  --ink: #1F2428;
+  --ink-soft: #57616A;
+  --slate: #262B30;
+  --slate-2: #30363C;
+  --chalk: #F3F4F1;
+  --chalk-soft: #AEB6BC;
+  --chalk-line: rgba(243, 244, 241, 0.22);
+  --tape: #F2B705;
+  --tape-ink: #1F2428;
+  --rec: #C1352A;
+  --ok: #2B7A4F;
+  --focus: #1F2428;
+  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", "Helvetica Neue", Arial, sans-serif;
+  --body: "Barlow", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --paper: #1C2023;
+    --paper-2: #262B2F;
+    --line: #353C41;
+    --ink: #E3E6E4;
+    --ink-soft: #9BA4AB;
+    --slate: #2B3136;
+    --slate-2: #353C42;
+    --chalk-line: rgba(243, 244, 241, 0.18);
+    --rec: #F0705F;
+    --ok: #5FC48B;
+    --focus: #F2B705;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 16px/1.5 var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+.wrap { max-width: 920px; margin: 0 auto; padding: 28px 24px 48px; }
+
+/* ---------- Notices ---------- */
+.notice {
+  border-left: 4px solid var(--tape);
+  background: var(--paper-2);
+  padding: 10px 14px;
+  margin: 0 0 18px;
+  font-size: 15px;
+}
+
+/* ---------- Clapper ---------- */
+.clapper { position: relative; height: 54px; margin: 44px 0 0 2px; }
+.stick {
+  position: absolute; left: 0; right: 0; height: 26px;
+  background: repeating-linear-gradient(-55deg, var(--chalk) 0 26px, #1E2226 26px 52px);
+  border: 2px solid #1E2226;
+  border-radius: 3px 3px 0 0;
+}
+.stick.top {
+  top: 0;
+  transform-origin: 8px 100%;
+  transform: rotate(-2.6deg);
+  transition: transform 160ms cubic-bezier(.5, 0, .9, .4);
+}
+.stick.bottom { top: 28px; border-radius: 0; background-position: 13px 0; }
+.clapper.clap .stick.top { transform: rotate(0deg); }
+.hinge {
+  position: absolute; left: -2px; top: 18px; width: 18px; height: 18px;
+  border-radius: 50%; background: #1E2226; border: 3px solid var(--chalk-soft);
+}
+
+/* ---------- Slate board ---------- */
+.board {
+  background: var(--slate);
+  color: var(--chalk);
+  padding: 24px 24px 22px;
+  border-radius: 0 0 6px 6px;
+}
+h1 {
+  font: 700 56px/0.95 var(--display);
+  letter-spacing: 0.005em;
+  margin: 0 0 6px;
+}
+.lede { margin: 0 0 20px; color: var(--chalk-soft); max-width: 60ch; }
+
+.fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--chalk-line);
+}
+.field {
+  padding: 10px 14px 12px;
+  border-right: 1px solid var(--chalk-line);
+  border-bottom: 1px solid var(--chalk-line);
+  min-width: 0;
+}
+.field:nth-child(2n) { border-right: 0; }
+.field.wide { grid-column: 1 / -1; border-right: 0; }
+.fields > .field:last-child, .fields > .field:nth-last-child(2):not(.wide) { border-bottom: 0; }
+.field > label:not(.check), .field > .label {
+  display: block;
+  font: 600 15px/1.2 var(--display);
+  letter-spacing: 0.02em;
+  color: var(--chalk-soft);
+  margin-bottom: 6px;
+}
+.board textarea, .board input[type=text], .board select {
+  width: 100%;
+  background: var(--slate-2);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--chalk);
+  padding: 9px 11px;
+}
+.board textarea { min-height: 92px; resize: vertical; line-height: 1.45; }
+.board textarea::placeholder { color: #8D969D; }
+.board select { appearance: none; padding-right: 32px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--chalk-soft) 50%), linear-gradient(135deg, var(--chalk-soft) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 55%, calc(100% - 12px) 55%;
+  background-size: 5px 5px; background-repeat: no-repeat; }
+.board :is(textarea, input, select):focus-visible { outline: 2px solid var(--tape); outline-offset: 1px; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row input[type=text] { flex: 1; font-variant-numeric: tabular-nums; }
+.hint { font-size: 14px; color: var(--chalk-soft); margin: 6px 0 0; max-width: 46ch; }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; cursor: pointer; padding-top: 4px; }
+.check input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--tape); flex: none; }
+
+.btn {
+  border: 1px solid var(--chalk-line);
+  background: transparent;
+  color: var(--chalk);
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--slate-2); }
+.btn:focus-visible { outline: 2px solid var(--tape); outline-offset: 2px; }
+
+.options { margin-top: 14px; }
+.options > summary {
+  cursor: pointer; list-style: none; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap;
+  padding: 6px 0; color: var(--chalk-soft); width: fit-content;
+}
+.options > summary::-webkit-details-marker { display: none; }
+.options > summary::before {
+  content: ""; width: 0; height: 0; border-left: 6px solid var(--chalk-soft);
+  border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+  transition: transform 120ms ease; align-self: center;
+}
+.options[open] > summary::before { transform: rotate(90deg); }
+.options > summary:focus-visible { outline: 2px solid var(--tape); outline-offset: 2px; }
+.sum-title { font: 600 17px/1.2 var(--display); color: var(--chalk); letter-spacing: 0.02em; }
+.sum-now { font-size: 14px; }
+.options .fields { margin-top: 8px; }
+.go { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 18px; flex-wrap: wrap; }
+.go .msg { font-size: 15px; color: var(--chalk-soft); min-height: 1.5em; flex: 1; min-width: 200px; }
+.go .msg.err { color: #FF9A8C; }
+.download {
+  background: var(--tape);
+  color: var(--tape-ink);
+  border: 0;
+  border-radius: 4px;
+  padding: 12px 34px;
+  font: 700 22px/1 var(--display);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.download:hover { filter: brightness(1.06); }
+.download:focus-visible { outline: 3px solid var(--chalk); outline-offset: 3px; }
+.download:disabled { opacity: .6; cursor: progress; }
+
+/* ---------- Queue ---------- */
+.queue-head { display: flex; align-items: baseline; justify-content: space-between; margin: 34px 0 6px; gap: 12px; }
+h2 { font: 700 28px/1.1 var(--display); margin: 0; }
+.link-btn {
+  background: none; border: 0; padding: 4px 2px; cursor: pointer;
+  color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; font-size: 15px;
+}
+.link-btn:hover { color: var(--ink); }
+[hidden] { display: none !important; }
+.link-btn:focus-visible, .act:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
+.empty { color: var(--ink-soft); padding: 18px 0; border-top: 2px solid var(--ink); }
+#jobs { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+#jobs:empty { display: none; }
+.job {
+  display: grid;
+  grid-template-columns: 128px 1fr auto;
+  gap: 4px 16px;
+  padding: 14px 0 0;
+  border-bottom: 1px solid var(--line);
+  align-items: start;
+}
+.thumb {
+  width: 128px; aspect-ratio: 16 / 9; background: var(--paper-2);
+  border-radius: 3px; overflow: hidden; position: relative; grid-column: 1; grid-row: 1;
+}
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb img[hidden], .thumb .dur[hidden] { display: none; }
+.thumb .dur {
+  position: absolute; right: 4px; bottom: 4px; font-size: 12px; line-height: 1;
+  background: rgba(20, 22, 24, .82); color: #F3F4F1; padding: 3px 5px; border-radius: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.meta { min-width: 0; grid-column: 2; grid-row: 1; }
+.title { font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sub { color: var(--ink-soft); font-size: 14px; margin-top: 2px; }
+.sub span + span::before { content: ", "; }
+.status { font-size: 14px; margin-top: 6px; }
+.status .pct { font-variant-numeric: tabular-nums; font-weight: 600; }
+.status .det { color: var(--ink-soft); }
+.job.failed .status { color: var(--rec); }
+.job.done .status { color: var(--ok); }
+.job.cancelled .status { color: var(--ink-soft); }
+.acts { display: flex; gap: 6px; grid-column: 3; grid-row: 1; align-self: center; }
+.act {
+  border: 1px solid var(--line); background: transparent; border-radius: 4px;
+  padding: 6px 12px; cursor: pointer; font-size: 14px; white-space: nowrap;
+}
+.act:hover { background: var(--paper-2); }
+.bar { grid-column: 1 / -1; grid-row: 2; height: 4px; margin-top: 12px; background: transparent; position: relative; overflow: hidden; }
+.bar i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--tape); transition: width .4s linear; }
+.job.converting .bar i { background: var(--ink); }
+.bar.indeterminate i { width: 30%; animation: slide 1.2s ease-in-out infinite; }
+@keyframes slide { from { left: -30%; } to { left: 100%; } }
+
+/* ---------- Footer ---------- */
+footer { margin-top: 36px; font-size: 14px; color: var(--ink-soft); display: grid; gap: 8px; }
+footer .row { flex-wrap: wrap; gap: 6px 14px; }
+footer .act { color: var(--ink); }
+.stopped {
+  position: fixed; inset: 0; background: var(--paper); display: none;
+  align-items: center; justify-content: center; text-align: center; padding: 24px;
+}
+.stopped.show { display: flex; }
+.stopped h2 { margin-bottom: 8px; }
+
+@media (max-width: 640px) {
+  .wrap { padding: 18px 14px 36px; }
+  h1 { font-size: 44px; }
+  .fields { grid-template-columns: 1fr; }
+  .field { border-right: 0 !important; border-bottom: 1px solid var(--chalk-line) !important; }
+  .fields > .field:last-child { border-bottom: 0 !important; }
+  .job { grid-template-columns: 96px 1fr; }
+  .thumb { width: 96px; }
+  .acts { grid-column: 1 / -1; grid-row: 2; padding-top: 8px; }
+  .bar { grid-row: 3; }
+  .clapper { margin-top: 20px; }
+  .download { width: 100%; }
+  .field .row { flex-wrap: wrap; }
+  .field .row input[type=text] { flex-basis: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stick.top, .bar i { transition: none; }
+  .bar.indeterminate i { animation: none; width: 100%; opacity: .5; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="notices"></div>
+
+  <div class="clapper" id="clapper" aria-hidden="true">
+    <div class="stick top"></div>
+    <div class="stick bottom"></div>
+    <div class="hinge"></div>
+  </div>
+
+  <main class="board">
+    <h1>EditReady</h1>
+    <p class="lede">Paste a video link. You get the highest quality the site offers, saved as a file Premiere Pro and After Effects open straight away.</p>
+
+    <form id="form" autocomplete="off">
+      <div class="fields">
+        <div class="field wide">
+          <label for="urls">Video links</label>
+          <textarea id="urls" placeholder="Paste a link here. One per line for several videos. YouTube, Instagram, Vimeo, X, Facebook and many more." spellcheck="false"></textarea>
+        </div>
+        <div class="field wide">
+          <label for="folder">Save to</label>
+          <div class="row">
+            <input type="text" id="folder" spellcheck="false">
+            <button type="button" class="btn" id="choose">Choose…</button>
+            <button type="button" class="btn" id="openFolder">Open folder</button>
+          </div>
+        </div>
+      </div>
+
+      <details class="options" id="options">
+        <summary><span class="sum-title">Options</span> <span class="sum-now" id="optSummary"></span></summary>
+        <div class="fields">
+          <div class="field">
+            <label for="mode">Format</label>
+            <select id="mode">
+              <option value="smart">Best for Premiere &amp; After Effects</option>
+              <option value="prores">ProRes 422 HQ (.mov)</option>
+              <option value="mp4">H.264 (.mp4)</option>
+              <option value="audio">Audio only (.wav)</option>
+            </select>
+            <p class="hint" id="modeHint"></p>
+          </div>
+          <div class="field">
+            <label for="maxres">Highest quality to download</label>
+            <select id="maxres">
+              <option value="best">Best available</option>
+              <option value="2160">Up to 4K (2160p)</option>
+              <option value="1440">Up to 1440p</option>
+              <option value="1080">Up to 1080p</option>
+              <option value="720">Up to 720p</option>
+            </select>
+            <p class="hint">Vertical videos count by their short side, so a 1080 × 1920 reel is 1080p.</p>
+          </div>
+          <div class="field">
+            <label for="cookies">Use logins from</label>
+            <select id="cookies">
+              <option value="none">No browser</option>
+              <option value="chrome">Chrome</option>
+              <option value="firefox">Firefox</option>
+              <option value="edge">Edge</option>
+              <option value="safari">Safari</option>
+              <option value="brave">Brave</option>
+              <option value="opera">Opera</option>
+              <option value="vivaldi">Vivaldi</option>
+            </select>
+            <p class="hint">Only for private or login-only videos. Firefox works most reliably.</p>
+          </div>
+          <div class="field">
+            <span class="label">Playlists</span>
+            <label class="check"><input type="checkbox" id="playlist"> <span>Download the whole playlist when a link includes one</span></label>
+          </div>
+        </div>
+      </details>
+
+      <div class="go">
+        <div class="msg" id="msg" role="status" aria-live="polite"></div>
+        <button type="submit" class="download" id="download">Download</button>
+      </div>
+    </form>
+  </main>
+
+  <section aria-labelledby="queueTitle">
+    <div class="queue-head">
+      <h2 id="queueTitle">Queue</h2>
+      <button type="button" class="link-btn" id="clear">Clear finished</button>
+    </div>
+    <p class="empty" id="empty">Downloads show up here. Paste a link above to start.</p>
+    <ul id="jobs"></ul>
+  </section>
+
+  <footer>
+    <div class="row">
+      <span id="engine">Checking engine…</span>
+      <button type="button" class="act" id="update">Check for updates</button>
+      <button type="button" class="act" id="quit">Quit EditReady</button>
+    </div>
+    <div id="updateStatus"></div>
+    <div>Download only videos you own or have permission to use.</div>
+  </footer>
+</div>
+
+<div class="stopped" id="stopped">
+  <div>
+    <h2>EditReady has stopped</h2>
+    <p>Start it again with the start file for your computer, then reload this page.</p>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const MODE_HINTS = {
+  smart: "H.264 videos stay untouched as MP4. Anything else becomes ProRes 422 HQ, so it always opens in Adobe apps.",
+  prores: "Smoothest editing, especially in After Effects. Big files: about 1.6 GB per minute at 1080p30.",
+  mp4: "Smaller files that work well in Premiere. After Effects plays them more slowly than ProRes.",
+  audio: "Best audio track saved as WAV, for music, voice-over and podcast audio.",
+};
+const ACTIVE = new Set(["queued", "reading", "downloading", "converting"]);
+let settingsLoaded = false;
+let stopped = false;
+
+async function api(path, body) {
+  const opts = { headers: { "X-EditReady": "1" } };
+  if (body !== undefined) {
+    opts.method = "POST";
+    opts.headers["Content-Type"] = "application/json";
+    opts.body = JSON.stringify(body);
+  }
+  const r = await fetch(path, opts);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || "Something went wrong.");
+  return j;
+}
+
+function currentSettings() {
+  return {
+    mode: $("mode").value, maxres: $("maxres").value, folder: $("folder").value.trim(),
+    cookies: $("cookies").value, playlist: $("playlist").checked,
+  };
+}
+function optionSummary() {
+  const sel = (id) => $(id).options[$(id).selectedIndex].text;
+  const res = sel("maxres");
+  const parts = [sel("mode"), res.charAt(0).toLowerCase() + res.slice(1)];
+  if ($("cookies").value !== "none") parts.push(`logins from ${sel("cookies")}`);
+  if ($("playlist").checked) parts.push("whole playlists");
+  $("optSummary").textContent = parts.join(", ");
+  $("modeHint").textContent = MODE_HINTS[$("mode").value] || "";
+}
+function applySettings(s) {
+  $("mode").value = s.mode; $("maxres").value = s.maxres; $("folder").value = s.folder;
+  $("cookies").value = s.cookies; $("playlist").checked = !!s.playlist;
+  optionSummary();
+}
+function say(text, isErr = false) {
+  $("msg").textContent = text;
+  $("msg").classList.toggle("err", isErr);
+}
+async function saveSettings() {
+  optionSummary();
+  try { await api("/api/settings", currentSettings()); } catch (e) { say(e.message, true); }
+}
+["mode", "maxres", "cookies", "playlist"].forEach((id) => $(id).addEventListener("change", saveSettings));
+$("folder").addEventListener("change", saveSettings);
+
+function clap() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const c = $("clapper");
+  c.classList.add("clap");
+  setTimeout(() => c.classList.remove("clap"), 260);
+}
+
+$("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const urls = $("urls").value.trim();
+  if (!urls) { say("Paste at least one video link.", true); $("urls").focus(); return; }
+  clap();
+  $("download").disabled = true;
+  try {
+    const r = await api("/api/add", { urls, settings: currentSettings() });
+    $("urls").value = "";
+    say(r.added === 1 ? "Added 1 link to the queue." : `Added ${r.added} links to the queue.`);
+    poll(true);
+  } catch (err) { say(err.message, true); }
+  finally { $("download").disabled = false; }
+});
+$("urls").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); $("form").requestSubmit(); }
+});
+$("choose").addEventListener("click", async () => {
+  say("Choose a folder in the window that opened. It may be behind your browser.");
+  try {
+    const r = await api("/api/pick-folder", {});
+    applySettings(r.settings);
+    say(r.changed ? "Folder updated." : "");
+  } catch (err) { say(err.message, true); $("folder").focus(); }
+});
+$("openFolder").addEventListener("click", async () => {
+  try { await api("/api/settings", currentSettings()); await api("/api/open-folder", {}); }
+  catch (err) { say(err.message, true); }
+});
+$("clear").addEventListener("click", async () => { await api("/api/clear", {}); poll(true); });
+$("update").addEventListener("click", async () => {
+  const b = $("update");
+  b.disabled = true; b.textContent = "Checking…";
+  try { const r = await api("/api/update", {}); $("updateStatus").textContent = r.status; }
+  catch (err) { $("updateStatus").textContent = err.message; }
+  finally { b.disabled = false; b.textContent = "Check for updates"; }
+});
+$("quit").addEventListener("click", async () => {
+  const busy = [...document.querySelectorAll(".job")].some((li) => ACTIVE.has(li.dataset.status));
+  if (busy && !confirm("Downloads in progress will stop. Quit EditReady?")) return;
+  try { await api("/api/quit", {}); } catch (_) {}
+  stopped = true;
+  $("stopped").classList.add("show");
+});
+
+function fmtDuration(s) {
+  if (!s && s !== 0) return "";
+  s = Math.round(s);
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  return h ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}` : `${m}:${String(sec).padStart(2, "0")}`;
+}
+function siteName(s) {
+  const map = { Youtube: "YouTube", YoutubeTab: "YouTube", Instagram: "Instagram", Facebook: "Facebook", Vimeo: "Vimeo", Twitter: "X", TikTok: "TikTok", Generic: "Web" };
+  return map[s] || s || "";
+}
+
+function makeRow(job) {
+  const li = document.createElement("li");
+  li.className = "job";
+  li.dataset.id = job.id;
+  li.innerHTML = `
+    <div class="thumb"><img alt="" referrerpolicy="no-referrer" loading="lazy" hidden><span class="dur" hidden></span></div>
+    <div class="meta">
+      <div class="title"></div>
+      <div class="sub"></div>
+      <div class="status"><span class="stage"></span> <span class="pct"></span> <span class="det"></span></div>
+    </div>
+    <div class="acts"></div>
+    <div class="bar"><i></i></div>`;
+  const img = li.querySelector("img");
+  img.addEventListener("load", () => { img.hidden = false; });
+  img.addEventListener("error", () => { img.hidden = true; });
+  li.querySelector(".acts").addEventListener("click", async (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    try { await api(`/api/${b.dataset.act}`, { id: li.dataset.id }); poll(true); }
+    catch (err) { say(err.message, true); }
+  });
+  return li;
+}
+
+function updateRow(li, job) {
+  li.className = `job ${job.status}`;
+  li.dataset.status = job.status;
+  const img = li.querySelector("img");
+  if (job.thumbnail && img.dataset.src !== job.thumbnail) { img.dataset.src = job.thumbnail; img.src = job.thumbnail; }
+  const dur = li.querySelector(".dur");
+  dur.hidden = !job.duration; dur.textContent = fmtDuration(job.duration);
+  li.querySelector(".title").textContent = job.title;
+
+  const sub = [siteName(job.site), job.quality, job.output_kind].filter(Boolean);
+  const subEl = li.querySelector(".sub");
+  const subKey = sub.join("|");
+  if (subEl.dataset.key !== subKey) {
+    subEl.dataset.key = subKey;
+    subEl.replaceChildren(...sub.map((t) => Object.assign(document.createElement("span"), { textContent: t })));
+  }
+
+  let stage = job.stage, pct = "", det = job.detail || "";
+  if (job.status === "failed") { stage = job.error || "Failed"; det = ""; }
+  if (job.status === "done") { stage = "Saved"; det = [job.output_name, job.detail].filter(Boolean).join(", "); }
+  if (job.progress != null && (job.status === "downloading" || job.status === "converting")) pct = `${Math.floor(job.progress * 100)}%`;
+  li.querySelector(".stage").textContent = stage;
+  li.querySelector(".pct").textContent = pct;
+  li.querySelector(".det").textContent = det;
+
+  const bar = li.querySelector(".bar"), fill = bar.querySelector("i");
+  const running = ACTIVE.has(job.status) && job.status !== "queued";
+  bar.style.visibility = running ? "visible" : "hidden";
+  bar.classList.toggle("indeterminate", running && job.progress == null);
+  fill.style.width = job.progress != null ? `${job.progress * 100}%` : "";
+
+  const acts = [];
+  if (ACTIVE.has(job.status)) acts.push(["cancel", "Cancel"]);
+  if (job.status === "done") acts.push(["reveal", "Show file"]);
+  if (job.status === "failed" || job.status === "cancelled") acts.push(["retry", "Try again"]);
+  if (!ACTIVE.has(job.status)) acts.push(["remove", "Remove"]);
+  const key = acts.map((a) => a[0]).join(",");
+  const actsEl = li.querySelector(".acts");
+  if (actsEl.dataset.key !== key) {
+    actsEl.dataset.key = key;
+    actsEl.replaceChildren(...acts.map(([act, label]) => {
+      const b = Object.assign(document.createElement("button"), { type: "button", className: "act", textContent: label });
+      b.dataset.act = act;
+      return b;
+    }));
+  }
+}
+
+const rows = new Map();
+function render(state) {
+  if (!settingsLoaded) { applySettings(state.settings); settingsLoaded = true; }
+  const list = $("jobs");
+  const seen = new Set();
+  for (const job of state.jobs) {
+    seen.add(job.id);
+    let li = rows.get(job.id);
+    if (!li) { li = makeRow(job); rows.set(job.id, li); }
+    updateRow(li, job);
+    list.appendChild(li);
+  }
+  for (const [id, li] of rows) if (!seen.has(id)) { li.remove(); rows.delete(id); }
+  $("empty").hidden = state.jobs.length > 0;
+  $("clear").hidden = !state.jobs.some((j) => !ACTIVE.has(j.status));
+
+  $("quit").hidden = !!state.window_mode;
+  const e = state.engine;
+  const parts = [`yt-dlp ${e.ytdlp || "missing"}`, e.js || "no YouTube helper", `FFmpeg ${e.ffmpeg || "missing"}`];
+  $("engine").textContent = `EditReady ${e.app}. Engine: ${parts.join(", ")}.`;
+  const notices = $("notices");
+  const nk = e.notices.join("|");
+  if (notices.dataset.key !== nk) {
+    notices.dataset.key = nk;
+    notices.replaceChildren(...e.notices.map((n) => Object.assign(document.createElement("p"), { className: "notice", textContent: n })));
+  }
+  return state.jobs.some((j) => ACTIVE.has(j.status));
+}
+
+let timer = null;
+async function poll(now) {
+  if (stopped) return;
+  clearTimeout(timer);
+  let busy = false;
+  try { busy = render(await api("/api/state")); }
+  catch (_) { stopped = true; $("stopped").classList.add("show"); return; }
+  timer = setTimeout(poll, busy ? 600 : 2000);
+}
+poll(true);
+</script>
+</body>
+</html>

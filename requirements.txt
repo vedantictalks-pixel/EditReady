@@ -1,0 +1,6 @@
+# EditReady engine. All free and open source.
+# The start files update these every time EditReady starts, because sites like
+# YouTube change often and yt-dlp releases fixes quickly.
+yt-dlp[default]>=2026.10.26   # downloader (the [default] extra includes yt-dlp-ejs for YouTube)
+deno>=2.4                     # JavaScript helper YouTube now needs for full quality
+imageio-ffmpeg>=0.6           # ready-made FFmpeg for Mac, Windows and Linux

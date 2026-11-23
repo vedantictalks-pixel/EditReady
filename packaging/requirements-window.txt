@@ -1,0 +1,9 @@
+# Native app window for Mac and Windows (pinned).
+pywebview==6.2.1
+pythonnet==3.2.1; sys_platform == "win32"
+pyobjc-core==13.0; sys_platform == "darwin"
+pyobjc-framework-Cocoa==13.0; sys_platform == "darwin"
+pyobjc-framework-Quartz==13.0; sys_platform == "darwin"
+pyobjc-framework-WebKit==13.0; sys_platform == "darwin"
+pyobjc-framework-Security==13.0; sys_platform == "darwin"
+pyobjc-framework-UniformTypeIdentifiers==13.0; sys_platform == "darwin"

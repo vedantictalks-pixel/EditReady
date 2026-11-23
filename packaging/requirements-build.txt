@@ -1,0 +1,9 @@
+# Tools used by the build service to make the ready-made apps.
+# Build tools are pinned to releases that are at least two weeks old.
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.9
+# The engine is bundled at its newest version when the app is built.
+# After that, each installed app keeps yt-dlp up to date by itself.
+yt-dlp[default]>=2026.10.26
+deno>=2.9.8
+imageio-ffmpeg>=0.8.1
