@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-15
+          - os: macos-14
             label: Mac-AppleSilicon
           - os: macos-15-intel
             label: Mac-Intel
