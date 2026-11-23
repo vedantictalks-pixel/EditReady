@@ -1,0 +1,116 @@
+# Builds the ready-made EditReady apps for Mac, Windows and Linux on GitHub's free build machines.
+# - "Run workflow" on the Actions tab makes test builds (download them from the run's page).
+# - Publishing a release on GitHub builds everything and attaches the files to that release.
+name: Build apps
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            label: Mac-AppleSilicon
+          - os: macos-15-intel
+            label: Mac-Intel
+          - os: windows-2022
+            label: Windows
+          - os: ubuntu-22.04
+            label: Linux-x64
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r packaging/requirements-build.txt
+
+      - name: Install native window support
+        if: runner.os != 'Linux'
+        run: python -m pip install -r packaging/requirements-window.txt
+
+      - name: Build the app
+        run: python -m PyInstaller --noconfirm --clean packaging/EditReady.spec
+
+      - name: Self-test (Mac)
+        if: runner.os == 'macOS'
+        run: dist/EditReady.app/Contents/MacOS/EditReady --selftest --youtube
+
+      - name: Self-test (Linux)
+        if: runner.os == 'Linux'
+        run: dist/EditReady/EditReady --selftest --youtube
+
+      - name: Self-test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath "dist\EditReady\EditReady.exe" -ArgumentList "--selftest","--youtube" -Wait -PassThru
+          Get-Content "$env:USERPROFILE\.editready\selftest.json"
+          if ($p.ExitCode -ne 0) { throw "Self-test failed" }
+
+      - name: Package (Mac)
+        if: runner.os == 'macOS'
+        run: |
+          codesign --verify --deep --strict dist/EditReady.app || codesign --force --deep --sign - dist/EditReady.app
+          mkdir -p dmg
+          ditto dist/EditReady.app dmg/EditReady.app
+          ln -s /Applications dmg/Applications
+          hdiutil create -volname EditReady -srcfolder dmg -ov -format UDZO "dist/EditReady-${{ matrix.label }}.dmg"
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          $iscc = Get-ChildItem "${env:ProgramFiles(x86)}\Inno Setup*\ISCC.exe", "$env:ProgramFiles\Inno Setup*\ISCC.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $iscc) { throw "Inno Setup not found" }
+          $ver = (Select-String -Path app.py -Pattern 'APP_VERSION = "([^"]+)"').Matches[0].Groups[1].Value
+          & $iscc.FullName "/DMyAppVersion=$ver" packaging\windows-installer.iss
+          Compress-Archive -Path dist\EditReady -DestinationPath dist\EditReady-Windows-Portable.zip
+
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: tar -C dist -czf dist/EditReady-Linux-x64.tar.gz EditReady
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: EditReady-${{ matrix.label }}
+          path: |
+            dist/*.dmg
+            dist/*.exe
+            dist/*.zip
+            dist/*.tar.gz
+          if-no-files-found: error
+
+  release:
+    name: Attach files to the release
+    needs: build
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v7
+        with:
+          path: out
+          merge-multiple: true
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la out
+          gh release upload "${{ github.event.release.tag_name }}" out/* --clobber --repo "$GITHUB_REPOSITORY"
+          gh release edit "${{ github.event.release.tag_name }}" --notes-file packaging/release-notes.md --repo "$GITHUB_REPOSITORY"
